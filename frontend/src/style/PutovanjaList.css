@@ -1,0 +1,143 @@
+/* Reset some base styles */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: #f5f7fa;
+  color: #2c3e50;
+}
+
+/* App Container */
+.container {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 30px 40px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease-in-out;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2d3d;
+  margin: 0;
+}
+
+.novo-button {
+  background: linear-gradient(135deg, #1890ff, #40a9ff);
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 8px 20px;
+  font-size: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(24, 144, 255, 0.2);
+  transition: all 0.2s ease-in-out;
+}
+
+.novo-button:hover {
+  background: linear-gradient(135deg, #1d78e3, #3a92ed);
+  box-shadow: 0 6px 14px rgba(24, 144, 255, 0.3);
+}
+
+/* Table Enhancements */
+.ant-table {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.ant-table-thead > tr > th {
+  background-color: #f0f4f8;
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ant-table-tbody > tr > td {
+  font-size: 0.95rem;
+  padding: 14px;
+}
+
+/* Modal Customization */
+.ant-modal-content {
+  border-radius: 12px;
+  padding: 30px;
+}
+
+.ant-modal-header {
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  background-color: #f0f4f8;
+  padding: 20px 30px;
+}
+
+.ant-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2d3d;
+}
+
+/* Form Styling */
+.ant-form-item-label > label {
+  font-weight: 600;
+  color: #34495e;
+}
+
+.ant-form-item-control-input input,
+.ant-form-item-control-input .ant-picker {
+  border-radius: 8px;
+  font-size: 0.95rem;
+  padding: 10px;
+}
+
+.ant-picker-input > input {
+  font-size: 0.95rem;
+}
+
+.ant-btn {
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.ant-btn-primary:hover {
+  background-color: #177ddc;
+  border-color: #177ddc;
+}
+
+/* Action Icons */
+.ant-btn-icon-only {
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Confirmation Modal Text */
+.ant-modal-body p {
+  font-size: 1rem;
+  color: #2c3e50;
+  text-align: center;
+}
