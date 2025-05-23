@@ -10,49 +10,65 @@ import {
   message,
 } from 'antd';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import {
+  addTrosak,
+  deleteTrosak,
+  fetchPutovanja,
+  fetchSumaTroskova,
+  fetchTroskovi,
+  updateTrosak,
+} from '../api';
 import DeleteButton from '../components/DeleteButton';
 import EditButton from '../components/EditButton';
 
 const { Title } = Typography;
 
-const mockPutovanja = [
-  {
-    id: '1',
-    drzava: 'Francuska',
-    grad: 'Pariz',
-    datumPocetka: '2024-06-01',
-    datumZavrsetka: '2024-06-10',
-  },
-  {
-    id: '2',
-    drzava: 'Italija',
-    grad: 'Rim',
-    datumPocetka: '2024-07-05',
-    datumZavrsetka: '2024-07-15',
-  },
-];
-
-const initialTroskovi = [
-  { id: 1, iznos: 50.0, datumTroska: '2024-06-02', putovanjeId: '1' },
-  { id: 2, iznos: 120.5, datumTroska: '2024-06-05', putovanjeId: '1' },
-  { id: 3, iznos: 70.0, datumTroska: '2024-07-06', putovanjeId: '2' },
-];
-
 function PutovanjeTroskovi() {
   const { id } = useParams();
-  const putovanje = mockPutovanja.find((p) => p.id === id);
-  const [troskovi, setTroskovi] = useState(
-    initialTroskovi.filter((t) => t.putovanjeId === id)
-  );
+  const [troskovi, setTroskovi] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTrosak, setEditingTrosak] = useState(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [toDeleteId, setToDeleteId] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [form] = Form.useForm();
+  const [putovanje, setPutovanje] = useState({
+    drzava: '',
+    grad: '',
+    datumPocetka: '',
+    datumZavrsetka: '',
+  });
+  const [suma, setSuma] = useState(0);
 
-  const sumaTroskova = troskovi.reduce((acc, curr) => acc + curr.iznos, 0);
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const allPutovanja = await fetchPutovanja();
+        const selectedPutovanje = allPutovanja.data.find(
+          (p) => p.id === parseInt(id)
+        );
+        if (selectedPutovanje) {
+          setPutovanje({
+            drzava: selectedPutovanje.lokacija.drzava,
+            grad: selectedPutovanje.lokacija.grad,
+            datumPocetka: selectedPutovanje.datumPocetka,
+            datumZavrsetka: selectedPutovanje.datumZavrsetka,
+          });
+        }
+
+        const troskoviRes = await fetchTroskovi(id);
+        setTroskovi(troskoviRes.data);
+
+        const sumaRes = await fetchSumaTroskova(id);
+        setSuma(sumaRes.data);
+      } catch (error) {
+        message.error('Greška pri učitavanju podataka.');
+      }
+    };
+
+    loadData();
+  }, [id]);
 
   const handleNewClick = () => {
     form.resetFields();
@@ -60,22 +76,26 @@ function PutovanjeTroskovi() {
     setIsModalOpen(true);
   };
 
-  const onFinish = (values) => {
+  const onFinish = async (values) => {
     const formatted = {
-      id: editingTrosak ? editingTrosak.id : Date.now(),
       iznos: parseFloat(values.iznos),
       datumTroska: values.datumTroska.format('YYYY-MM-DD'),
-      putovanjeId: id,
     };
 
-    if (editingTrosak) {
-      setTroskovi((prev) =>
-        prev.map((t) => (t.id === editingTrosak.id ? formatted : t))
-      );
-      message.success('Trošak ažuriran.');
-    } else {
-      setTroskovi((prev) => [...prev, formatted]);
-      message.success('Trošak dodan.');
+    try {
+      if (editingTrosak) {
+        await updateTrosak(editingTrosak.id, formatted);
+        message.success('Trošak ažuriran.');
+      } else {
+        await addTrosak(id, formatted);
+        message.success('Trošak dodan.');
+      }
+      const res = await fetchTroskovi(id);
+      setTroskovi(res.data);
+      const sumaRes = await fetchSumaTroskova(id);
+      setSuma(sumaRes.data);
+    } catch (err) {
+      message.error('Greška pri spremanju.');
     }
 
     setIsModalOpen(false);
@@ -97,8 +117,12 @@ function PutovanjeTroskovi() {
     setIsDeleteModalOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    setTroskovi((prev) => prev.filter((t) => t.id !== toDeleteId));
+  const handleDeleteConfirm = async () => {
+    await deleteTrosak(toDeleteId);
+    const res = await fetchTroskovi(id);
+    setTroskovi(res.data);
+    const sumaRes = await fetchSumaTroskova(id);
+    setSuma(sumaRes.data);
     setIsDeleteModalOpen(false);
     setToDeleteId(null);
     message.success('Trošak obrisan.');
@@ -121,18 +145,8 @@ function PutovanjeTroskovi() {
       key: 'akcije',
       render: (_, record) => (
         <Space>
-          <EditButton
-            onClick={(e) => {
-              e.stopPropagation();
-              openEditForm(record);
-            }}
-          />
-          <DeleteButton
-            onClick={(e) => {
-              e.stopPropagation();
-              confirmDelete(record.id);
-            }}
-          />
+          <EditButton onClick={() => openEditForm(record)} />
+          <DeleteButton onClick={() => confirmDelete(record.id)} />
         </Space>
       ),
     },
@@ -141,11 +155,11 @@ function PutovanjeTroskovi() {
   return (
     <div className="container">
       <div className="header">
-        <Title level={2}>
-          Troškovi: {putovanje.drzava}, {putovanje.grad}
-        </Title>
-        <div style={{ marginBottom: 16, fontWeight: 'bold', fontSize: 16 }}>
-          Suma Troškova: {sumaTroskova.toFixed(2)} €
+        <div>
+          <Title level={2}>
+            Troškovi: {putovanje.drzava}, {putovanje.grad}
+          </Title>
+          <Title level={4}>Suma Troškova: {suma.toFixed(2)} €</Title>
         </div>
         <Button className="novo-button" onClick={handleNewClick}>
           NOVO
@@ -210,14 +224,14 @@ function PutovanjeTroskovi() {
       </Modal>
 
       <Modal
-        title="Brisanje troška"
         open={isDeleteModalOpen}
-        onOk={handleDeleteConfirm}
         onCancel={() => setIsDeleteModalOpen(false)}
-        okText="Da"
-        cancelText="Ne"
+        onOk={handleDeleteConfirm}
+        okText="Obriši"
+        cancelText="Odustani"
+        title="Potvrda brisanja"
       >
-        <p>Jeste li sigurni da želite obrisati ovaj trošak?</p>
+        Jeste li sigurni da želite obrisati ovaj trošak?
       </Modal>
     </div>
   );
