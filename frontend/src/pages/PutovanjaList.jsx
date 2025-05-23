@@ -1,189 +1,256 @@
+// PutovanjaList.jsx
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import {
+  Button,
+  DatePicker,
+  Form,
+  Input,
+  Modal,
+  Space,
+  Table,
+  message,
+} from 'antd';
+import 'antd/dist/reset.css';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
-import './PutovanjaList.css';
+import { useNavigate } from 'react-router-dom';
+import '../style/PutovanjaList.css';
+// or for older versions
+// import 'antd/dist/antd.css';
+
+const { RangePicker } = DatePicker;
 
 function PutovanjaList() {
   const [putovanja, setPutovanja] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    datumPocetka: '',
-    datumZavrsetka: '',
-    svrha: '',
-    opis: '',
-    katPutovanjaId: '',
-    lokacijaId: '',
-  });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPutovanje, setEditingPutovanje] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [toDeleteId, setToDeleteId] = useState(null);
+
+  const [form] = Form.useForm();
+  const navigate = useNavigate();
+
+  const fetchPutovanja = () => {
+    const mockData = [
+      {
+        id: 1,
+        datumPocetka: '2025-05-01',
+        datumZavrsetka: '2025-05-05',
+        svrha: 'Poslovno',
+        opis: 'Put u Beč',
+        katPutovanja: { katPutovanjaId: 1 },
+        lokacija: { lokacijaId: 2, grad: 'Beč', drzava: 'Austrija' },
+      },
+      {
+        id: 2,
+        datumPocetka: '2025-06-10',
+        datumZavrsetka: '2025-06-15',
+        svrha: 'Odmor',
+        opis: 'Put u Rim',
+        katPutovanja: { katPutovanjaId: 2 },
+        lokacija: { lokacijaId: 3, grad: 'Rim', drzava: 'Italija' },
+      },
+    ];
+    setPutovanja(mockData);
+  };
 
   useEffect(() => {
-    fetch('/putovanja')
-      .then((res) => res.json())
-      .then((data) => setPutovanja(data));
+    fetchPutovanja();
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const openNewForm = () => {
+    setEditingPutovanje(null);
+    form.resetFields();
+    setIsModalOpen(true);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const openEditForm = (record) => {
+    setEditingPutovanje(record);
+    form.setFieldsValue({
+      ...record,
+      dateRange: [dayjs(record.datumPocetka), dayjs(record.datumZavrsetka)],
+      katPutovanjaId: record.katPutovanja.katPutovanjaId,
+      lokacijaId: record.lokacija.lokacijaId,
+    });
+    setIsModalOpen(true);
+  };
 
+  const handleDeleteClick = (id) => {
+    setToDeleteId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    setPutovanja(putovanja.filter((p) => p.id !== toDeleteId));
+    setIsDeleteModalOpen(false);
+    setToDeleteId(null);
+    message.success('Putovanje je obrisano');
+  };
+
+  const handleModalCancel = () => {
+    setIsModalOpen(false);
+    setEditingPutovanje(null);
+  };
+
+  const onFinish = (values) => {
     const body = {
-      datumPocetka: formData.datumPocetka,
-      datumZavrsetka: formData.datumZavrsetka,
-      svrha: formData.svrha,
-      opis: formData.opis,
-      katPutovanja: { katPutovanjaId: Number(formData.katPutovanjaId) },
-      lokacija: { lokacijaId: Number(formData.lokacijaId) },
+      datumPocetka: values.dateRange[0].format('YYYY-MM-DD'),
+      datumZavrsetka: values.dateRange[1].format('YYYY-MM-DD'),
+      svrha: values.svrha,
+      opis: values.opis,
+      katPutovanja: { katPutovanjaId: values.katPutovanjaId },
+      lokacija: { lokacijaId: values.lokacijaId, grad: '', drzava: '' },
     };
 
-    fetch('/putovanja', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to create');
-        return res.json();
-      })
-      .then((newPutovanje) => {
-        setPutovanja([...putovanja, newPutovanje]);
-        setShowForm(false);
-        setFormData({
-          datumPocetka: '',
-          datumZavrsetka: '',
-          svrha: '',
-          opis: '',
-          katPutovanjaId: '',
-          lokacijaId: '',
-        });
-      })
-      .catch((err) => alert(err.message));
+    if (editingPutovanje) {
+      setPutovanja((prev) =>
+        prev.map((p) =>
+          p.id === editingPutovanje.id ? { ...p, ...body, id: p.id } : p
+        )
+      );
+      message.success('Putovanje je ažurirano');
+    } else {
+      const newPutovanje = { ...body, id: Date.now() };
+      setPutovanja((prev) => [...prev, newPutovanje]);
+      message.success('Novo putovanje je dodano');
+    }
+
+    setIsModalOpen(false);
+    setEditingPutovanje(null);
+    form.resetFields();
   };
+
+  const columns = [
+    {
+      title: 'Grad',
+      dataIndex: ['lokacija', 'grad'],
+      key: 'grad',
+    },
+    {
+      title: 'Država',
+      dataIndex: ['lokacija', 'drzava'],
+      key: 'drzava',
+    },
+    {
+      title: 'Datum početka',
+      dataIndex: 'datumPocetka',
+      key: 'datumPocetka',
+    },
+    {
+      title: 'Datum završetka',
+      dataIndex: 'datumZavrsetka',
+      key: 'datumZavrsetka',
+    },
+    {
+      title: 'Akcije',
+      key: 'actions',
+      render: (_, record) => (
+        <Space size="middle">
+          <Button
+            icon={<EditOutlined />}
+            onClick={(e) => {
+              e.stopPropagation(); // <--- STOP event bubbling here
+              openEditForm(record);
+            }}
+          />
+          <Button
+            icon={<DeleteOutlined />}
+            danger
+            onClick={(e) => {
+              e.stopPropagation(); // <--- STOP event bubbling here
+              handleDeleteClick(record.id);
+            }}
+          />
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <div className="container">
       <div className="header">
-        <h1 className="title">Putovanja</h1>
-        <button className="button" onClick={() => setShowForm(true)}>
+        <h1>Putovanja</h1>
+        <Button className="novo-button" onClick={openNewForm}>
           NOVO
-        </button>
+        </Button>
       </div>
 
-      <table className={`table ${showForm ? 'disabled' : ''}`}>
-        <thead>
-          <tr>
-            <th className="th">Grad</th>
-            <th className="th">Država</th>
-            <th className="th">Datum početka</th>
-            <th className="th">Datum završetka</th>
-          </tr>
-        </thead>
-        <tbody>
-          {putovanja.length === 0 ? (
-            <tr>
-              <td colSpan="4" className="noData">
-                Nema podataka
-              </td>
-            </tr>
-          ) : (
-            putovanja.map((p) => (
-              <tr key={p.id} className="tr">
-                <td className="td">{p.lokacija?.grad || '-'}</td>
-                <td className="td">{p.lokacija?.drzava || '-'}</td>
-                <td className="td">{p.datumPocetka}</td>
-                <td className="td">{p.datumZavrsetka}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+      <Table
+        columns={columns}
+        dataSource={putovanja}
+        rowKey="id"
+        pagination={{ pageSize: 5 }}
+        onRow={(record) => ({
+          onClick: () => navigate(`/putovanja/${record.id}/troskovi`),
+        })}
+      />
+      <Modal
+        title={editingPutovanje ? 'Uredi putovanje' : 'Novo putovanje'}
+        open={isModalOpen}
+        onCancel={handleModalCancel}
+        footer={null}
+      >
+        <Form form={form} layout="vertical" onFinish={onFinish}>
+          <Form.Item
+            name="lokacijaDrzava"
+            label="Država"
+            rules={[{ required: true, message: 'Unesite državu' }]}
+          >
+            <Input />
+          </Form.Item>
 
-      {showForm && (
-        <div className="modalOverlay">
-          <div className="modalContent">
-            <h2>Novo putovanje</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="formRow">
-                <label className="label">Datum početka</label>
-                <input
-                  type="date"
-                  name="datumPocetka"
-                  className="input"
-                  value={formData.datumPocetka}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="formRow">
-                <label className="label">Datum završetka</label>
-                <input
-                  type="date"
-                  name="datumZavrsetka"
-                  className="input"
-                  value={formData.datumZavrsetka}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="formRow">
-                <label className="label">Svrha</label>
-                <input
-                  type="text"
-                  name="svrha"
-                  className="input"
-                  value={formData.svrha}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="formRow">
-                <label className="label">Opis</label>
-                <input
-                  type="text"
-                  name="opis"
-                  className="input"
-                  value={formData.opis}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="formRow">
-                <label className="label">Kategorija putovanja ID</label>
-                <input
-                  type="number"
-                  name="katPutovanjaId"
-                  className="input"
-                  value={formData.katPutovanjaId}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="formRow">
-                <label className="label">Lokacija ID</label>
-                <input
-                  type="number"
-                  name="lokacijaId"
-                  className="input"
-                  value={formData.lokacijaId}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="formButtons">
-                <button type="submit" className="button">
-                  Spremi
-                </button>
-                <button
-                  type="button"
-                  className="cancelButton"
-                  onClick={() => setShowForm(false)}
-                >
-                  Odustani
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+          <Form.Item
+            name="lokacijaGrad"
+            label="Grad"
+            rules={[{ required: true, message: 'Unesite grad' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="dateRange"
+            label="Datum početka i završetka"
+            rules={[{ required: true, message: 'Odaberite datume' }]}
+          >
+            <RangePicker />
+          </Form.Item>
+
+          <Form.Item
+            name="svrha"
+            label="Svrha"
+            rules={[{ required: true, message: 'Unesite svrhu' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="opis"
+            label="Opis"
+            rules={[{ required: true, message: 'Unesite opis' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: 'right' }}>
+            <Space>
+              <Button onClick={handleModalCancel}>Odustani</Button>
+              <Button type="primary" htmlType="submit">
+                Spremi
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        title="Potvrda brisanja"
+        open={isDeleteModalOpen}
+        onOk={handleDeleteConfirm}
+        onCancel={() => setIsDeleteModalOpen(false)}
+        okText="DA"
+        cancelText="NE"
+      >
+        <p>Jesi li siguran da želiš izbrisati ovo putovanje?</p>
+      </Modal>
     </div>
   );
 }
