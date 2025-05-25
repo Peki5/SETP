@@ -1,0 +1,25 @@
+Prije pokretanja aplikacije potrebno je imati instalirano:
+
+Java Development Kit (JDK) 17 ili noviji
+Node.js i npm
+PostgreSQL
+
+1. Pokreni PostgreSQL server.
+2. Kreiraj bazu podataka, npr. imena 'SETP'.
+3. U datoteci `backend/src/main/resources/application.properties` postavi:
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/SETP
+spring.datasource.username=postgres
+spring.datasource.password=lozinka
+spring.jpa.hibernate.ddl-auto=update
+
+Zamijeni 'postgres' i 'lozinka' sa svojim korisničkim imenom i lozinkom za PostgreSQL.
+
+Pokretanje backenda u repozitoriju setp-backend:
+mvnw.cmd spring-boot:run
+
+Pokretanje frontenda u repozitoriju fronted:
+npm install
+npm start
+
