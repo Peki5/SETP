@@ -45,12 +45,14 @@ function PutovanjaList() {
   };
 
   const onFinish = async (values) => {
+    console.log('Form submitted with:', values); // debug line
     const putovanjeData = {
       datumPocetka: values.dateRange[0].format('YYYY-MM-DD'),
       datumZavrsetka: values.dateRange[1].format('YYYY-MM-DD'),
       svrha: values.svrha,
       opis: values.opis,
-      katPutovanja: { katPutovanjaId: 1 }, // hardcoded or to be updated later
+      sumaTroskova: 0.0, // default starting sum
+      kategorijaPutovanja: { katPutovanjaId: 1 }, // correct key name
       lokacija: {
         grad: values.lokacijaGrad,
         drzava: values.lokacijaDrzava,
@@ -106,10 +108,10 @@ function PutovanjaList() {
       <Table
         columns={columns}
         dataSource={putovanja}
-        rowKey="id"
+        rowKey="putovanjeId"
         pagination={{ pageSize: 5 }}
         onRow={(record) => ({
-          onClick: () => navigate(`/putovanja/${record.id}/troskovi`),
+          onClick: () => navigate(`/putovanja/${record.putovanjeId}/troskovi`),
         })}
       />
 
